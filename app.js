@@ -66,7 +66,10 @@ app.post("/", function(req, res){
     workItems.push(item);
     res.redirect("/work");
   } else {
-    items.push(item);
+    const itm = new Item({name: item});
+    itm.save().then(()=>{
+      console.log("Item inserted");
+    })
     res.redirect("/");
   }
 });
