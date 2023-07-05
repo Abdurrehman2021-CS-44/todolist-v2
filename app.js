@@ -88,23 +88,27 @@ app.post("/", function(req, res){
 
 app.post("/delete", function(req, res){
   const itemId = req.body.checkBox;
-  Item.findOne({_id: itemId})
-  .then((item)=>{
-    if(item){
-      Item.findByIdAndRemove(itemId)
-      .catch((err)=> {
-        console.log(err);
-      })
-      res.redirect("/");
-    } else {
-      
-    }
-  });
-  
+  const list = req.body.list;
+  if (list === date.getDate()){
+    Item.findByIdAndRemove(itemId)
+    .catch((err)=> {
+      console.log(err);
+    });
+    res.redirect("/");
+  } else {
+    List.updateOne({name: list.toLowerCase()}, {$pull : {items : {_id: itemId} } } )
+    .then(()=>{
+      res.redirect("/"+list.toLowerCase());
+    })
+    .catch((err)=> {
+      console.log("Error is: " + err);
+    });
+  }
 });
 
 app.get("/:listName", function(req,res){
   const listName = req.params.listName;
+  console.log(listName);
   List.findOne({name: listName})
   .then((list)=>{
     if (list){
@@ -120,8 +124,8 @@ app.get("/:listName", function(req,res){
       });
       listItem.save().then(()=>{
         console.log("Successfully added.");
+        res.redirect("/" + listName)
       });
-      res.redirect("/" + listName)
     }
   })
 });
