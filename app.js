@@ -4,6 +4,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const date = require(__dirname + "/date.js");
 const mongoose = require("mongoose");
+const _ = require("lodash");
 
 const app = express();
 
@@ -14,7 +15,14 @@ const itemsSchema = new mongoose.Schema({
   name: String
 });
 
+const listSchema = new mongoose.Schema({
+  name: String,
+  items: [itemsSchema]
+});
+
 const Item = mongoose.model("Item", itemsSchema);
+
+const List = mongoose.model("List", listSchema)
 
 const exercise = new Item({
   name: "Habit 1"
@@ -60,31 +68,62 @@ const day = date.getDate();
 
 app.post("/", function(req, res){
 
-  const item = req.body.newItem;
-
-  if (req.body.list === "Work") {
-    workItems.push(item);
-    res.redirect("/work");
-  } else {
-    const itm = new Item({name: item});
-    itm.save().then(()=>{
+  const i = req.body.newItem;
+  const item = new Item({name: i});
+  const listName = req.body.list.toLowerCase();
+  if (listName == date.getDate()){
+    item.save().then(()=>{
       console.log("Item inserted");
     })
     res.redirect("/");
+  } else {
+    List.findOne({name: listName})
+    .then((list)=>{
+      list.items.push(item);
+      list.save();
+      res.redirect("/"+listName);
+    })
   }
 });
 
 app.post("/delete", function(req, res){
   const itemId = req.body.checkBox;
-  Item.findByIdAndRemove(itemId)
-  .catch((err)=> {
-    console.log(err);
-  })
-  res.redirect("/");
+  Item.findOne({_id: itemId})
+  .then((item)=>{
+    if(item){
+      Item.findByIdAndRemove(itemId)
+      .catch((err)=> {
+        console.log(err);
+      })
+      res.redirect("/");
+    } else {
+      
+    }
+  });
+  
 });
 
-app.get("/work", function(req,res){
-  res.render("list", {listTitle: "Work List", newListItems: workItems});
+app.get("/:listName", function(req,res){
+  const listName = req.params.listName;
+  List.findOne({name: listName})
+  .then((list)=>{
+    if (list){
+      if (_.lowerCase(list.name) === _.lowerCase(listName)){
+        var n = list.name[0].toUpperCase() + list.name.slice(1, list.name.length);
+        res.render("list", {listTitle: n, newListItems: list.items});
+      } 
+    } else {
+      console.log(list);
+      const listItem = new List({
+        name: listName,
+        items: defaultItems
+      });
+      listItem.save().then(()=>{
+        console.log("Successfully added.");
+      });
+      res.redirect("/" + listName)
+    }
+  })
 });
 
 app.get("/about", function(req, res){
