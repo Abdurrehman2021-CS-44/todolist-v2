@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 const app = express();
 
 mongoose.connect("mongodb://127.0.0.1:27017/todolistDB", {useNewUrlParser: true})
-.then(() => console.log('Connected!'));; //{useNewUrlParser: true}
+.then(function(){console.log("Connected");}); //{useNewUrlParser: true}
 
 const itemsSchema = new mongoose.Schema({
   name: String
@@ -17,42 +17,44 @@ const itemsSchema = new mongoose.Schema({
 const Item = mongoose.model("Item", itemsSchema);
 
 const exercise = new Item({
-  name: "Do Exercise"
+  name: "Habit 1"
 });
 
 const read = new Item({
-  name: "Read Book"
+  name: "Habit 2"
 });
 
 const learnCrypto = new Item({
-  name: "Learn Crypto"
+  name: "Habit 3"
 });
 
 const defaultItems = [exercise, read, learnCrypto];
-
-Item.insertMany(defaultItems).then((result) => {
-  console.log('Documents inserted successfully:', result);
-  mongoose.connection.close();
-})
-.catch((error) => {
-  if (error.hasOwnProperty('writeErrors')){
-    console.error('Error inserting documents:', error);
-  }
-});
 
 app.set('view engine', 'ejs');
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
-const items = ["Buy Food", "Cook Food", "Eat Food"];
-const workItems = [];
-
 app.get("/", function(req, res) {
 
 const day = date.getDate();
 
-  res.render("list", {listTitle: day, newListItems: items});
+  Item.find({})
+  .then((items) => {
+    if (items.length === 0){
+      Item.insertMany(defaultItems).then((result) => {
+        console.log('Documents inserted successfully:', result);
+      })
+      .catch((error) => {
+        console.error('Error inserting documents:', error);
+      });
+      res.redirect("/");
+    } else {
+      console.log(items);
+      res.render("list", {listTitle: day, newListItems: items});
+    }
+  })
+
 
 });
 
