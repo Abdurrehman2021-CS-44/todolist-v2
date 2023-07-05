@@ -3,8 +3,42 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const date = require(__dirname + "/date.js");
+const mongoose = require("mongoose");
 
 const app = express();
+
+mongoose.connect("mongodb://127.0.0.1:27017/todolistDB", {useNewUrlParser: true})
+.then(() => console.log('Connected!'));; //{useNewUrlParser: true}
+
+const itemsSchema = new mongoose.Schema({
+  name: String
+});
+
+const Item = mongoose.model("Item", itemsSchema);
+
+const exercise = new Item({
+  name: "Do Exercise"
+});
+
+const read = new Item({
+  name: "Read Book"
+});
+
+const learnCrypto = new Item({
+  name: "Learn Crypto"
+});
+
+const defaultItems = [exercise, read, learnCrypto];
+
+Item.insertMany(defaultItems).then((result) => {
+  console.log('Documents inserted successfully:', result);
+  mongoose.connection.close();
+})
+.catch((error) => {
+  if (error.hasOwnProperty('writeErrors')){
+    console.error('Error inserting documents:', error);
+  }
+});
 
 app.set('view engine', 'ejs');
 
